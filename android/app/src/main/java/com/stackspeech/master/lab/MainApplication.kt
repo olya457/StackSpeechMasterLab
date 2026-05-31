@@ -1,4 +1,4 @@
-package com.stackspeechmasterlab
+package com.stackspeech.master.lab
 
 import android.app.Application
 import com.facebook.react.PackageList

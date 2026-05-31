@@ -15,6 +15,7 @@ type Flow =
   | 'setup'
   | 'read'
   | 'between'
+  | 'readyVote'
   | 'vote'
   | 'results';
 
@@ -85,8 +86,7 @@ export function BattleScreen({
       setFlow('between');
       return;
     }
-    setTimeLeft(30);
-    setFlow('vote');
+    setFlow('readyVote');
   };
 
   const voteFor = (index: 0 | 1) => {
@@ -182,7 +182,8 @@ export function BattleScreen({
     );
   }
 
-  if (flow === 'read' || flow === 'between') {
+  if (flow === 'read' || flow === 'between' || flow === 'readyVote') {
+    const waitingForVote = flow === 'readyVote';
     return (
       <Screen scroll contentStyle={styles.readContent}>
         <TopBar onBack={() => setFlow('setup')} />
@@ -198,15 +199,29 @@ export function BattleScreen({
           onPress={finishReading}
           style={styles.finishButton}
         />
-        <Modal visible={flow === 'between'} transparent animationType="fade">
+        <Modal
+          visible={flow === 'between' || flow === 'readyVote'}
+          transparent
+          animationType="fade">
           <View style={styles.modalShade}>
             <Card style={styles.modalCard}>
               <Text style={styles.modalCheck}>✓</Text>
-              <Text style={styles.modalTitle}>{players[0]} Finished!</Text>
-              <Text style={styles.modalBody}>Time to vote for the winner.</Text>
+              <Text style={styles.modalTitle}>
+                {players[currentPlayer]} Finished!
+              </Text>
+              <Text style={styles.modalBody}>
+                {waitingForVote
+                  ? 'Both players are done. Time to vote for the winner.'
+                  : 'Pass the device to the next player.'}
+              </Text>
               <AppButton
-                title="Next Player"
+                title={waitingForVote ? 'Start Voting' : 'Next Player'}
                 onPress={() => {
+                  if (waitingForVote) {
+                    setTimeLeft(30);
+                    setFlow('vote');
+                    return;
+                  }
                   setCurrentPlayer(1);
                   setFlow('read');
                 }}
@@ -343,7 +358,7 @@ export function BattleScreen({
       <Card style={styles.howCard}>
         <Text style={styles.howTitle}>How to Play</Text>
         {[
-          'Enter player names and choose settings',
+          'Review players and choose settings',
           'Each player takes turns reading the same text',
           'Audience votes for the best performance',
           'Winner is revealed after voting ends',

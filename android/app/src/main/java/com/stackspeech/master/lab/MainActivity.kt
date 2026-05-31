@@ -1,4 +1,4 @@
-package com.stackspeechmasterlab
+package com.stackspeech.master.lab
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
