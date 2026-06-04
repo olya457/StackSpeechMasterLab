@@ -24,12 +24,41 @@ target 'StackSpeechMasterLab' do
   )
 
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+
+        definitions = build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+        definitions = [definitions] if definitions.is_a?(String)
+        definitions << 'FMT_USE_CONSTEVAL=0' unless definitions.include?('FMT_USE_CONSTEVAL=0')
+        build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = definitions
+      end
+    end
+
+    [
+      'fmt/include/fmt/base.h',
+      'Headers/Public/fmt/fmt/base.h',
+      'Headers/Private/fmt/fmt/base.h'
+    ].each do |relative_path|
+      header_path = File.join(installer.sandbox.root.to_s, relative_path)
+      next unless File.exist?(header_path)
+
+      header_path = File.realpath(header_path)
+      header = File.read(header_path)
+      patched_header = header.gsub(/#\s*define FMT_USE_CONSTEVAL 1/, '#  define FMT_USE_CONSTEVAL 0')
+      if patched_header != header
+        File.chmod(0644, header_path) unless File.writable?(header_path)
+        File.write(header_path, patched_header)
+      end
+    end
   end
 end
